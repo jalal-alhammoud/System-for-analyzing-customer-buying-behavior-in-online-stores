@@ -35,7 +35,8 @@ svd= SvdModel()
 # نتيجة التنبؤ هي بين 0 و 5
 ```bash
 print("Svd model recommendation:")
-svd.recommend_with_svd(1,5)
+svd_recommend = svd.recommend_with_svd(1,5)
+print(svd_recommend)
 print("############################")
 
 # لإعادة تدريب النموذج
@@ -54,7 +55,8 @@ knn= KnnModel()
 # دالة التنبؤ recommend_with_knn(user_id, product_id)
 # نتيجة التنبؤ هي بين 0 و 5
 print("Knn model recommendation:")
-knn.recommend_with_knn(1,5)
+knn_recommend = knn.recommend_with_knn(1,5)
+print(knn_recommend)
 print("############################")
 
 
@@ -111,6 +113,7 @@ input_data = {
 }
 print('predication with deep learn model:')
 pred= deeplearn.predict_rating(input_data)
+print(pred)
 print("###############################")
 #لتحميل النموذج واستمرار التدريب على بيانات جديدة
 # deeplearn.load_and_continue_training()
@@ -121,7 +124,8 @@ print("###############################")
 ```bash
 from imageRecommender.imageRecommender import ImageRecommendationService, prepare_resources
 import pandas as pd
-df = pd.read_csv('your_products.csv') # هيكل بيانات يحوي معرفات المنتجات وأسماء الصور
+from config.config import Config
+df = pd.read_csv(Config.DATA_PATHS['images_df']) # هيكل بيانات يحوي معرفات المنتجات وأسماء الصور
 
    
 # حفظ النموذج والمتجهات مسبقاً (مرة واحدة)
@@ -143,13 +147,14 @@ print("###############################")
 
 
 
-### تابع توصية معتمد على المحتوى يعطي توصيات بناء على اسم عمود والخاصية ا
+### تابع توصية معتمد على المحتوى يعطي توصيات بناء على اسم عمود والخاصية 
 يأخذ اسم العمود والخاصية كمدخل ويعطي اقتراحات بناء على الخواص الأخرى 
 ```bash
 from functions.recommendingFuctions import content_based_simple,clean
+from config.config import Config
 
 # # Load the dataset 
-metadata = pd.read_csv('data/products.csv', low_memory=False)
+metadata = pd.read_csv(Config.DATA_PATHS['products'], low_memory=False)
 print("نتيجة تابع توصية معتمد على المحتوى يعطي توصيات بناء على اسم العمود والخاصية")
 recommendation = content_based_simple('category','Sports', metadata, ['category', 'brand'])
 print(recommendation)
@@ -162,8 +167,9 @@ print(recommendation)
 
 ```bash
 from functions.recommendingFuctions import mostPopular
+from config.config import Config
 
-metadata = pd.read_csv('data/reviews.csv', low_memory=False)
+metadata = pd.read_csv(Config.DATA_PATHS['reviews'], low_memory=False)
 predication = mostPopular(metadata,11)
 print("إيجاد المنتجات الأكثر شعبية")
 print(predication)
@@ -222,7 +228,9 @@ print(predication)
 
 ```bash
 from functions.recommendingFuctions import get_recomend_with_describition
-metadata = pd.read_csv('data/reviews.csv', low_memory=False)
+from config.config import Config
+
+metadata = pd.read_csv(Config.DATA_PATHS['reviews'], low_memory=False)
 predication =get_recomend_with_describition(metadata, "product_id",393,'review_text' )
 predication =get_recomend_with_describition(metadata, "review_text","Not worth the price.",'review_text' )
 
@@ -264,7 +272,7 @@ print(clustered_df[['user_id', 'age', 'cluster']])
 from functions.recommendingFuctions import recommend_products_by_description
 
 
-df_review = pd.read_csv('data/reviews.csv', low_memory=False)
+df_review = pd.read_csv(Config.DATA_PATHS['reviews'], low_memory=False)
 
 print("#دلة تقوم باقتراح توصيات بناء على وصف يدخله المستخدم وفئة (اختياري) ")
 re= recommend_products_by_description(df_review, user_description="I need a phone with great camera quality",description_column="review_text",top_n=5 )
@@ -288,10 +296,13 @@ print(re)
 
 
 from functions.recommendingFuctions import extract_user_interests
-df_user = pd.read_csv('data/users.csv', low_memory=False)
-df_pro = pd.read_csv('data/products.csv', low_memory=False)
-df_inter = pd.read_csv('data/interactions.csv', low_memory=False)
-df_review = pd.read_csv('data/reviews.csv', low_memory=False)
+from config.config import Config
+
+
+df_user = pd.read_csv(Config.DATA_PATHS['users'], low_memory=False)
+df_pro = pd.read_csv(Config.DATA_PATHS['products'], low_memory=False)
+df_inter = pd.read_csv(Config.DATA_PATHS['interactions'], low_memory=False)
+df_review = pd.read_csv(Config.DATA_PATHS['reviews'], low_memory=False)
 
 users_with_interests = extract_user_interests(df_user, df_review, df_inter, df_pro)
 print("استنتاج اهتمامات المستخدمين من البيانات")
@@ -304,10 +315,13 @@ print(users_with_interests.head())
 ### تابع لاستنتاج اهتمامات المستخدم من البيانات مع تابع لإيجاد المستخدمين الذين لهم اهتمامات مشتركة 
 ```bash
 from functions.recommendingFuctions import extract_user_interests, find_similar_users
-df_user = pd.read_csv('data/users.csv', low_memory=False)
-df_pro = pd.read_csv('data/products.csv', low_memory=False)
-df_inter = pd.read_csv('data/interactions.csv', low_memory=False)
-df_review = pd.read_csv('data/reviews.csv', low_memory=False)
+from config.config import Config
+
+
+df_user = pd.read_csv(Config.DATA_PATHS['users'], low_memory=False)
+df_pro = pd.read_csv(Config.DATA_PATHS['products'], low_memory=False)
+df_inter = pd.read_csv(Config.DATA_PATHS['interactions'], low_memory=False)
+df_review = pd.read_csv(Config.DATA_PATHS['reviews'], low_memory=False)
 
 users_with_interests = extract_user_interests(df_user, df_review, df_inter, df_pro)
 
@@ -330,11 +344,13 @@ print(similar_users[['user_id', 'age', 'gender', 'similarity_score',
 ### تابع يقوم بإرجاع المنتجات التي قام المستخدم بتقيمها والتي هي أعلى من تقييم معين 
 ```bash
 from functions.recommendingFuctions import get_high_rated_products
+from config.config import Config
 
-df_review = pd.read_csv('data/reviews.csv', low_memory=False)
+df_review = pd.read_csv(Config.DATA_PATHS['reviews'], low_memory=False)
 
 print("المنتجات التي قام المستخدم  رقم 5 بتقيمها بتفييم أكبر أو يساوي 3")
 high_rated_product_for_5 = get_high_rated_products(df_review, 5, r=3)
+print(high_rated_product_for_5)
 print("################################################")
 ```
 ---
@@ -342,10 +358,13 @@ print("################################################")
 
 ```bash
 from functions.recommendingFuctions import get_user_interacted_products
-df_inter = pd.read_csv('data/interactions.csv', low_memory=False)
+from config.config import Config
+
+df_inter = pd.read_csv(Config.DATA_PATHS['interactions'], low_memory=False)
 
 print("المنتجات التي قام المستخدم 5 بالتفاعل معها إضافة للسلة مشاهدة شراء")
 user_inter= get_user_interacted_products(df_inter, 5)
+print(user_inter)
 print("################################################")
 ```
 ---
@@ -353,9 +372,10 @@ print("################################################")
 ### تابع يقوم بإرجاع المنتجات التي قام المستخدم بالتفاعل معها أو تقيمها تقييم مرتفع
 ```bash
 from functions.recommendingFuctions import get_user_prefered_product
-df_review = pd.read_csv('data/reviews.csv', low_memory=False)
-df_inter = pd.read_csv('data/interactions.csv', low_memory=False)
+from config.config import Config
 
+df_review = pd.read_csv(Config.DATA_PATHS['reviews'], low_memory=False)
+df_inter = pd.read_csv(Config.DATA_PATHS['interactions'], low_memory=False)
 print("المنتجات التي قام المستخدم رقم 5 بالتفاعل معها أو تقييمها")
 user_pro = get_user_prefered_product(df_review,df_inter ,5 )
 print(user_pro)
@@ -367,7 +387,9 @@ print("################################################")
 
 ```bash
 from functions.recommendingFuctions import  get_user_interactions_details
-df_inter = pd.read_csv('data/interactions.csv', low_memory=False)
+from config.config import Config
+
+df_inter = pd.read_csv(Config.DATA_PATHS['interactions'], low_memory=False)
 print("كافة تفاعلات المستخدم رقم 5 مع البيانات")
 
 user_inter_df = get_user_interactions_details(df_inter, 5)
@@ -379,8 +401,9 @@ print("################################################")
 ### إرجاع عدد التفاعلات لكل منتج:
 ```bash
 from functions.recommendingFuctions import  get_user_interactions_count
+from config.config import Config
 
-df_inter = pd.read_csv('data/interactions.csv', low_memory=False)
+df_inter = pd.read_csv(Config.DATA_PATHS['interactions'], low_memory=False)
 print("عدد تفاعلات المستخدم مع كل منتج")
 product_inter= get_user_interactions_count(df_inter, 5)
 print(product_inter)
@@ -392,8 +415,9 @@ print("################################################")
 # تصفية حسب نوع التفاعل
 ```bash
 from functions.recommendingFuctions import  get_user_interactions_by_type
+from config.config import Config
 
-df_inter = pd.read_csv('data/interactions.csv', low_memory=False)
+df_inter = pd.read_csv(Config.DATA_PATHS['interactions'], low_memory=False)
 print("تصفية تفاعلات المستخدم حسب نوع التفاعل مشاهدة مثلا")
 
 inter_by_type=  get_user_interactions_by_type(df_inter, 5, 'view')
@@ -407,11 +431,12 @@ print("################################################")
 #يتم إرجاع المنتجات للمستخدمين المشابهين بالمواصفات الشخصية لهذا المستخدم
 ```bash
 from functions.recommendingFuctions import get_user_similar_prefered_products
+from config.config import Config
 
-df_user = pd.read_csv('data/users.csv', low_memory=False)
-df_pro = pd.read_csv('data/products.csv', low_memory=False)
-df_inter = pd.read_csv('data/interactions.csv', low_memory=False)
-df_review = pd.read_csv('data/reviews.csv', low_memory=False)
+df_user = pd.read_csv(Config.DATA_PATHS['users'], low_memory=False)
+df_pro = pd.read_csv(Config.DATA_PATHS['products'], low_memory=False)
+df_inter = pd.read_csv(Config.DATA_PATHS['interactions'], low_memory=False)
+df_review = pd.read_csv(Config.DATA_PATHS['reviews'], low_memory=False)
 
 print("المنتجات التي قام المستخدمون المشابهون بالاهتمامات مع المستخدم 5 بالتفاعل معها")
 product_from_similar_users = get_user_similar_prefered_products(5,df_user,df_pro,df_inter,df_review)
@@ -426,7 +451,7 @@ from functions.recommendingFuctions import get_products_from_product
 
 print("المنتجات المقترحة بناء على التشابه مع المنتج رقم 100 وفق مختلف الخوارزميات السابقة")
 
-recommendation_product = get_products_from_product(100)
+recommendation_product = get_products_from_product([100])
 
 print(recommendation_product)
 
@@ -476,9 +501,11 @@ print("################################################")
 ### تابع يقوم بتجميع المستخدمين ضمن مجموعات حسب مواصفاتهم وحسب اهتماماتهم وحسب المواصفات والاهتمامات معاً
 ```bash
 from functions.recommendingFuctions import cluster_all_users
-users_df = pd.read_csv("data/users.csv")
-reviews_df = pd.read_csv("data/reviews.csv")
-interactions_df = pd.read_csv("data/interactions.csv")
+from config.config import Config
+
+users_df = pd.read_csv(Config.DATA_PATHS['users'])
+reviews_df = pd.read_csv(Config.DATA_PATHS['reviews'])
+interactions_df = pd.read_csv(Config.DATA_PATHS['interactions'])
 
 clusters = cluster_all_users(
     users_df=users_df,
@@ -491,7 +518,7 @@ print("تجميع المستخدمين في مجموعات")
 
 # استخراج النتائج
 print("عدد المستخدمين في كل مجموعة (مدمجة):")
-for cluster_id, users in clusters["feature_clusters"].items():
+for cluster_id, users in clusters["features_clusters"].items():
     print(f"المجموعة {cluster_id}: {len(users)} مستخدم")
 
 print("=== تجميع الصفات ===")
