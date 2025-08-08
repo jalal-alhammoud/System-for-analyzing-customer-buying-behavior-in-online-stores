@@ -1,493 +1,573 @@
-from config.config import Config
-
-
-###############################################################################
-# التنبؤ باستخدام نموذج svd
-from modelServices.svdModel import SvdModel
-svd= SvdModel()
-# دالة التنبؤ recommend_with_svd(user_id, product_id)
-# نتيجة التنبؤ هي بين 0 و 5
-print("Svd model recommendation:")
-svd_recommend = svd.recommend_with_svd(1,5)
-print(svd_recommend)
-print("############################")
-
-# لإعادة تدريب النموذج
-# svd.train_svd()
-
-
-#####################################################################################3
-#التنبؤ باستخدام خوارزمية knn
-#يمثل هذا النموذج مثال على التصفية التعاونية القائمة على المستخدم
-
-from modelServices.knnModel import KnnModel
-knn= KnnModel()
-# دالة التنبؤ recommend_with_knn(user_id, product_id)
-# نتيجة التنبؤ هي بين 0 و 5
-print("Knn model recommendation:")
-knn_recommend = knn.recommend_with_knn(1,5)
-print(knn_recommend)
-print("############################")
-
-
-# لإعادة تدريب النموذج
-#لتعديل الخيارات
-#تغيير مقياس التشابه إلى 'pearson' أو 'msd'
-# تجربة user_based=False للتصفية المعتمدة على العناصر
-# تعديل عدد الجيران
-# train_knn(self,similarity='cosine' ,user_based=True, k=30)
-# knn.train_knn()
-
-
-##################################################################################
-# التنبؤ باستخدام lightfm model
-
-from modelServices.lightfmModel import LightfmModel
-
-lightmodel = LightfmModel()
-# دالة التنبؤ recommend_with_lightfm(user_id, product_id)
-# نتيجة التنبؤ هي رقم بين 0 و 1
-print("predication With LightFm:")
-predicationWithLightFm = lightmodel.recommend_with_lightfm(1,5)
-print(predicationWithLightFm)
-print("########################")
-# لإعادة تدريب النموذج
-# lightmodel.train_lightfm()
-
-###################################################################################
-
-# التبؤ باستخدام النموذج الهجين (نموذج التعلم العميق)
-from modelServices.deepLearnModel import DeepLearnModel
-
-deeplearn = DeepLearnModel()
-
-
-#لتدريب النموذج وحفظه
-# deeplearn.train_and_save_model()
-
-# التبؤ بقيمة دخل مثل 
-# خرج التبؤ احتمالي بين 0 و 1
-input_data = {
-    'user_id': 500,
-    'product_id': 10,
-    'age': 35,
-    'gender': "Female",
-    'price': 899.99,
-    'location_user': 'Chicago',
-    'review_text': "i love this pro",
-    'category': "Clothing",
-    'brand': "BrandB",
-    'time_of_day': "Night",
-    'device': "Mobile",
-    'location_con': "New York"
-}
-print('predication with deep learn model:')
-pred= deeplearn.predict_rating(input_data)
-print(pred)
-print("###############################")
-#لتحميل النموذج واستمرار التدريب على بيانات جديدة
-# deeplearn.load_and_continue_training()
-
-##################################################################3
-
-# التوصية باستخدام الصور الخاصة بالمنتجات بناء على صور المنتجات التي نالت إعجاب أو تفاعل
-from imageRecommender.imageRecommender import ImageRecommendationService, prepare_resources
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import Optional, List, Dict, Any
 import pandas as pd
-df = pd.read_csv(Config.DATA_PATHS['images_df']) # هيكل بيانات يحوي معرفات المنتجات وأسماء الصور
-
-   
-# حفظ النموذج والمتجهات مسبقاً (مرة واحدة)
-# خطوة تحضيرية (تجرى مرة واحدة)
-# prepare_resources(df, image_path='data/image_data/images')
-
-# تهيئة الخدمة
-service = ImageRecommendationService()
-
-#التبؤ بالمنتحات
-print("recommendations by product image:")
-recommendations = service.get_recommendations("fa8e22d6-c0b6-5229-bb9e-ad52eda39a0a.jpg", 3)
-
-print(recommendations) # [{'product_id': 'fa8e22d6-c0b6-5229-bb9e-ad52eda39a0a', 'images': 'fa8e22d6-c0b6-5229-bb9e-ad52eda39a0a.jpg'}, {'product_id': '3f3f97bb-5faf-57df-a9ff-1af24e2b1045', 'images': '3f3f97bb-5faf-57df-a9ff-1af24e2b1045.jpg'}, {'product_id': '2cc3eb4c-42b5-5bc5-9eb6-0f438f45dd58', 'images': '2cc3eb4c-42b5-5bc5-9eb6-0f438f45dd58.jpg'}]
-print("###############################")
-##########################################################################
-
-#############################
-
-
-#تابع توصية معتمد على المحتوى يعطي توصيات بناء على اسم عمود والخاصية ا
-#يأخذ اسم العمود والخاصية كمدخل ويعطي اقتراحات بناء على الخواص الأخرى 
-from functions.recommendingFuctions import content_based_simple,clean
-
-# # Load the dataset 
-metadata = pd.read_csv(Config.DATA_PATHS['products'], low_memory=False)
-print("نتيجة تابع توصية معتمد على المحتوى يعطي توصيات بناء على اسم العمود والخاصية")
-recommendation = content_based_simple('category','Sports', metadata, ['category', 'brand'])
-print(recommendation)
-
-
-########################################
-
-#تابع يقوم باعادة المنتجات الأكثر شعبية
-#يعتمد التابع على تقييمات المستخدمين للمنتج
-
-from functions.recommendingFuctions import mostPopular
-
-metadata = pd.read_csv(Config.DATA_PATHS['reviews'], low_memory=False)
-predication = mostPopular(metadata,11)
-print("إيجاد المنتجات الأكثر شعبية")
-print(predication)
-print("##################################")
-
-#############################################
-
-#تابع يقوم بالتوصية بمنتج معين أو مستخدم مشابه أو الاثنين معا بناء على المميزات
-#يجب ان تكون المميزات على شكل onehotencoding H, scaling للحصول على نتائج
-# يتم استخدام مقياس min max لتقليل القيم 
-# يتم استخدام KNN للتوصية
-# المميزات features على شكل dataframe
-# يمكن تعديل التابع بحيث يتم حفظ النموذج وإعادة استخدامه
-
-from functions.recommendingFuctions import get_recomend_with_features_knn,load_and_preprocess_data
-
-
-metadata = load_and_preprocess_data()
-df = metadata['products']
-pro_num =pd.DataFrame(metadata['features']['product_numerical'])
-pro_cat =pd.DataFrame(metadata['features']['product_categorical'])
-
-features = pd.concat([pro_num,pro_cat], axis=1)
-predication = get_recomend_with_features_knn(df, features,'category','Clothing')
-print(" نتيجة تابع يقوم بالتوصية بمنتج معين  بناء على المميزات ")
-print(predication)
-# #مثال على user
-df = metadata['users']
-pro_num =pd.DataFrame(metadata['features']['user_numerical'])
-pro_cat =pd.DataFrame(metadata['features']['user_categorical'])
-
-features = pd.concat([pro_num,pro_cat], axis=1)
-predication = get_recomend_with_features_knn(df, features,'location',"Houston")
-print(" نتيجة تابع يقوم بالتوصية مستخدم مشابه بناء على المميزات ")
-print(predication)
-print("##################################")
-
-####################################################
-
-#تابع يقوم بالتوصية بناء على المحتوى باستخدام cosine_similitry
-from functions.recommendingFuctions import get_recomend_with_cosine
-metadata = load_and_preprocess_data()
-df = metadata['products']
-pro_num =pd.DataFrame(metadata['features']['product_numerical'])
-pro_cat =pd.DataFrame(metadata['features']['product_categorical'])
-
-features = pd.concat([pro_num,pro_cat], axis=1)
-predication = get_recomend_with_cosine(df, features,'category','Clothing')
-print(" نتيجة تابع يقوم بالتوصية بناء على المحتوى باستخدام cosine_similitry ")
-print(predication)
-print("##################################")
-
-
-#########################################################
-# تابع يقوم بالتوصية بناء على المحتوى لمنتج معين بناء على وصف أو مراجعة نصية لهذا المنتج
-
-from functions.recommendingFuctions import get_recomend_with_describition
-metadata = pd.read_csv(Config.DATA_PATHS['reviews'], low_memory=False)
-predication =get_recomend_with_describition(metadata, "product_id",393,'review_text' )
-predication =get_recomend_with_describition(metadata, "review_text","Not worth the price.",'review_text' )
-
-print(" نتيجة  تابع يقوم بالتوصية بناء على المحتوى لمنتج معين بناء على وصف أو مراجعة نصية لهذا المنتج ")
-print(predication)
-print("##################################")
-
-#####################################################
-#  دالة لترتيب المنتجات وإرجاع أحدث n منتج
-# from functions.recommendingFuctions import get_recomend_with_describition
-# get_top_n_products_by_weight(df, date_column, n)
-
-
-
-################################################################
-
-# دالة تجميع لهياكل البيانات حسب قيم رقمية لأعمدة معينة مثل العمر السعر 
-# cluster_data(
-#     df: pd.DataFrame,
-#     features: list,
-#     n_clusters: int = 10,
-#     auto_optimize_k: bool = False,
-#     max_k: int = 15,
-#     random_state: int = 42
-# )
-from functions.recommendingFuctions import cluster_data, load_and_preprocess_data
-
-metadata = load_and_preprocess_data()
-df = metadata['users']
-
-clustered_df = cluster_data(df, features=['age'], n_clusters=3)
-print("# دالة تجميع لهياكل البيانات حسب قيم رقمية لأعمدة معينة مثل العمر السعر ")
-print(clustered_df[['user_id', 'age', 'cluster']])
-
-###########################################################
-#دلة تقوم باقتراح توصيات بناء على وصف يدخله المستخدم وفئة (اختياري) 
-from functions.recommendingFuctions import recommend_products_by_description
-
-
-df_review = pd.read_csv(Config.DATA_PATHS['reviews'], low_memory=False)
-
-print("#دلة تقوم باقتراح توصيات بناء على وصف يدخله المستخدم وفئة (اختياري) ")
-re= recommend_products_by_description(df_review, user_description="I need a phone with great camera quality",description_column="review_text",top_n=5 )
-
-print(re)
-print("##################################")
-
-###########################################################
-
-#  تابع لاستنتاج اهتمامات المستخدم من البيانات
-    
-#     Args:
-#         reviews_df (DataFrame): يحتوي على user_id, product_id, rating, review_text
-#         products_df (DataFrame): يحتوي على product_id, category, price, brand
-#         user_review (str): نص المراجعة من المستخدم
-#         user_category (str): الفئة المطلوبة
-#         top_n (int): عدد التوصيات المطلوبة
-        
-#     Returns:
-#         DataFrame: المنتجات الموصى بها مع معلوماتها
-
-
-from functions.recommendingFuctions import extract_user_interests
-df_user = pd.read_csv(Config.DATA_PATHS['users'], low_memory=False)
-df_pro = pd.read_csv(Config.DATA_PATHS['products'], low_memory=False)
-df_inter = pd.read_csv(Config.DATA_PATHS['interactions'], low_memory=False)
-df_review = pd.read_csv(Config.DATA_PATHS['reviews'], low_memory=False)
-
-users_with_interests = extract_user_interests(df_user, df_review, df_inter, df_pro)
-print("استنتاج اهتمامات المستخدمين من البيانات")
-print(users_with_interests.head())
-print("##################################")
-
-##################################################################
-
-
-
-#  تابع لاستنتاج اهتمامات المستخدم من البيانات
-# مع تابع لإيجاد المستخدمين الذين لهم اهتمامات مشتركة 
-from functions.recommendingFuctions import extract_user_interests, find_similar_users
-df_user = pd.read_csv(Config.DATA_PATHS['users'], low_memory=False)
-df_pro = pd.read_csv(Config.DATA_PATHS['products'], low_memory=False)
-df_inter = pd.read_csv(Config.DATA_PATHS['interactions'], low_memory=False)
-df_review = pd.read_csv(Config.DATA_PATHS['reviews'], low_memory=False)
-
-users_with_interests = extract_user_interests(df_user, df_review, df_inter, df_pro)
-
-similar_users = find_similar_users(
-    target_user_id=123,
-    users_with_interests_df=users_with_interests,
-    reviews_df=df_review,
-    interactions_df=df_inter,
-    n_recommendations=5
+from config.config import Config
+from functions.recommendingFuctions import load_and_preprocess_data
+# تهيئة تطبيق FastAPI
+app = FastAPI(
+    title="Recommendation System API",
+    description="A comprehensive API for product recommendations using various algorithms",
+    version="1.0.0",
+    openapi_tags=[{
+        "name": "Recommendations",
+        "description": "Endpoints for different recommendation algorithms"
+    }]
 )
 
-# عرض النتائج
-print("ايجاد المستخدمين المشابهين بالاهتمامات لمستخدم معين")
-print(similar_users[['user_id', 'age', 'gender', 'similarity_score', 
-                   'interests_categories', 'preferred_brands']])
+# تحميل البيانات الأساسية
+try:
+    products_df = pd.read_csv(Config.DATA_PATHS['products'], low_memory=False)
+    reviews_df = pd.read_csv(Config.DATA_PATHS['reviews'], low_memory=False)
+    interactions_df = pd.read_csv(Config.DATA_PATHS['interactions'], low_memory=False)
+    users_df = pd.read_csv(Config.DATA_PATHS['users'], low_memory=False)
+    images_df = pd.read_csv(Config.DATA_PATHS['images_df'])
+    metadata = load_and_preprocess_data()
+except Exception as e:
+    print(f"Error loading data: {str(e)}")
 
-print("##################################")
+# نماذج البيانات (Pydantic models)
+class UserProductRequest(BaseModel):
+    user_id: int
+    product_id: int
 
-##########################################################################
+class UserRequest(BaseModel):
+    user_id: int
 
-# تابع يقوم بإرجاع المنتجات التي قام المستخدم بتقيمها والتي هي أعلى من تقييم معين 
-from functions.recommendingFuctions import get_high_rated_products
+class ProductRequest(BaseModel):
+    product_id: int
 
-df_review = pd.read_csv(Config.DATA_PATHS['reviews'], low_memory=False)
+class ContentBasedRequest(BaseModel):
+    column_name: str
+    value: str
+    features: Optional[List[str]] = None
 
-print("المنتجات التي قام المستخدم  رقم 5 بتقيمها بتفييم أكبر أو يساوي 3")
-high_rated_product_for_5 = get_high_rated_products(df_review, 5, r=3)
-print(high_rated_product_for_5)
-print("################################################")
+class TextBasedRequest(BaseModel):
+    text: str
+    column_name: str = "review_text"
+    df : str = "reviews_df"
+    top_n: int = 5
 
-################################################################################
-# تابع يقوم بإرجاع المنتجات التي قام المستخدم بالتفاعل معها
+class DeepLearningRequest(BaseModel):
+    user_id: int
+    product_id: int
+    age: int
+    gender: str
+    price: float
+    location_user: str
+    review_text: str
+    category: str
+    brand: str
+    time_of_day: str
+    device: str
+    location_con: str
 
-from functions.recommendingFuctions import get_user_interacted_products
-df_inter = pd.read_csv(Config.DATA_PATHS['interactions'], low_memory=False)
+class ImageRequest(BaseModel):
+    image_name: str
+    top_n: int = 3
 
-print("المنتجات التي قام المستخدم 5 بالتفاعل معها إضافة للسلة مشاهدة شراء")
-user_inter= get_user_interacted_products(df_inter, 5)
-print(user_inter)
-print("################################################")
+class ClusterRequest(BaseModel):
+    features: List[str]
+    df : str = 'users'
+    n_clusters: int = 10
+    auto_optimize_k: bool = False
+    max_k: int = 15
 
-###################################################################################
-
-# تابع يقوم بإرجاع المنتجات التي قام المستخدم بالتفاعل معها أو تقيمها تقييم مرتفع
-from functions.recommendingFuctions import get_user_prefered_product
-df_review = pd.read_csv(Config.DATA_PATHS['reviews'], low_memory=False)
-df_inter = pd.read_csv(Config.DATA_PATHS['interactions'], low_memory=False)
-
-print("المنتجات التي قام المستخدم رقم 5 بالتفاعل معها أو تقييمها")
-user_pro = get_user_prefered_product(df_review,df_inter ,5 )
-print(user_pro)
-print("################################################")
-
-####################################################################################
-
-#إرجاع DataFrame كامل مع جميع التفاعلات:
-
-from functions.recommendingFuctions import  get_user_interactions_details
-df_inter = pd.read_csv(Config.DATA_PATHS['interactions'], low_memory=False)
-print("كافة تفاعلات المستخدم رقم 5 مع البيانات")
-
-user_inter_df = get_user_interactions_details(df_inter, 5)
-print(user_inter_df.head())
-print("################################################")
-
-#######################################################################################
-
-# إرجاع عدد التفاعلات لكل منتج:
-from functions.recommendingFuctions import  get_user_interactions_count
-
-df_inter = pd.read_csv(Config.DATA_PATHS['interactions'], low_memory=False)
-print("عدد تفاعلات المستخدم مع كل منتج")
-product_inter= get_user_interactions_count(df_inter, 5)
-print(product_inter)
-
-print("################################################")
-
-#############################################################################################
-
-# تصفية حسب نوع التفاعل
-from functions.recommendingFuctions import  get_user_interactions_by_type
-
-df_inter = pd.read_csv(Config.DATA_PATHS['interactions'], low_memory=False)
-print("تصفية تفاعلات المستخدم حسب نوع التفاعل مشاهدة مثلا")
-
-inter_by_type=  get_user_interactions_by_type(df_inter, 5, 'view')
-print(inter_by_type)
-print("################################################")
-
-##################################################################################################
-
-#تابع يقوم بإرجاع معرفات المنتجات التي اهتم بها المستخدمين المشابهين بالاهتمامات للمستخدم
-# في حال كان المستخدم جديد وغير معروف اهتماماته بعد بسبب عدم التفاعل مع الموقع 
-#يتم إرجاع المنتجات للمستخدمين المشابهين بالمواصفات الشخصية لهذا المستخدم
-from functions.recommendingFuctions import get_user_similar_prefered_products
-
-df_user = pd.read_csv(Config.DATA_PATHS['users'], low_memory=False)
-df_pro = pd.read_csv(Config.DATA_PATHS['products'], low_memory=False)
-df_inter = pd.read_csv(Config.DATA_PATHS['interactions'], low_memory=False)
-df_review = pd.read_csv(Config.DATA_PATHS['reviews'], low_memory=False)
-
-print("المنتجات التي قام المستخدمون المشابهون بالاهتمامات مع المستخدم 5 بالتفاعل معها")
-product_from_similar_users = get_user_similar_prefered_products(5,df_user,df_pro,df_inter,df_review)
-print(product_from_similar_users)
-print("################################################")
-
-####################################################################################################
-
-# تابع يرجع المنتجات المقترحة بناء على لمنتجات معينة بناء على التوابع السابقة
-from functions.recommendingFuctions import get_products_from_product
-
-print("المنتجات المقترحة بناء على التشابه مع المنتج رقم 100 وفق مختلف الخوارزميات السابقة")
-
-recommendation_product = get_products_from_product([100])
-
-print(recommendation_product)
-
-print("################################################")
+class ExplanationRequest(BaseModel):
+    user_data: Dict[str, Any]
+    product_data: Dict[str, Any]
+    recommendation_score: float
 
 
-######################################################################################################
-## تابع يعطي اقتراحات لمستخدم معين
-from functions.recommendingFuctions import suggest_for_user
+class RecommendationResponse(BaseModel):
+    product_id: str
+    # name: str
+    # score: float
+    # explanation: str
+    # price: float
+    # image_url: str
 
-print('المنتجات المقترحة للمستخدم رقم 5 اعتمادا على التوابع السابقة')
-recommendation_for_user_5 = suggest_for_user(5)
+# === نقاط النهاية للوظائف الأساسية ===
 
-print(recommendation_for_user_5)
-print("################################################")
-
-#########################################################################################################
-##  تابع يعطي اقتراحات لمستخدم معين مع تحليل عميق
-
-from functions.recommendingFuctions import deep_suggest_for_user
-print('المنتجات المقترحة للمستخدم رقم 5 اعتمادا على التوابع السابقة مع تحليل عميق والتنبؤ بتقييم هذا المستخدم لهذه المنتجات')
-
-
-deep_recommendation = deep_suggest_for_user(5)
-
-print(deep_recommendation)
-
-print("################################################")
-
-#############################################################################################################
-# تابع يقوم بتوليد توصيات لكافة المستخدمين
-# يستغرق وقت للتنفيذ بشكل كامل
-# from functions.recommendingFuctions import generate_recommendations_for_all_users
-
-# recommendation_for_all user  = generate_recommendations_for_all_users()
-
-# print("توليد التوصيات لكل المستخدمين")
-# print(recommendation_for_all user.head())
-
-# print("################################################")
+@app.post("/svd/recommend", tags=["Recommendations"])
+async def recommend_with_svd(request: UserProductRequest):
+    """
+    Get recommendation using SVD model
+    """
+    from modelServices.svdModel import SvdModel
+    svd = SvdModel()
+    try:
+        recommendation = svd.recommend_with_svd(request.user_id, request.product_id)
+        return {"user_id": request.user_id, "product_id": request.product_id, "prediction": recommendation}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-################################################################
+@app.post("/knn/recommend", tags=["Recommendations"])
+async def recommend_with_knn(request: UserProductRequest):
+    """
+    Get recommendation using KNN model
+    """
+    from modelServices.knnModel import KnnModel
+    knn = KnnModel()
+    try:
+        recommendation = knn.recommend_with_knn(request.user_id, request.product_id)
+        return {"user_id": request.user_id, "product_id": request.product_id, "prediction": recommendation}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-#تابع يقوم بتجميع المستخدمين ضمن مجموعات حسب مواصفاتهم وحسب اهتماماتهم وحسب المواصفات والاهتمامات معاً
-from functions.recommendingFuctions import cluster_all_users
-users_df = pd.read_csv(Config.DATA_PATHS['users'])
-reviews_df = pd.read_csv(Config.DATA_PATHS['reviews'])
-interactions_df = pd.read_csv(Config.DATA_PATHS['interactions'])
 
-clusters = cluster_all_users(
-    users_df=users_df,
-    reviews_df=reviews_df,
-    interactions_df=interactions_df,
-    n_clusters=5  # عدد المجموعات
-)
+@app.post("/lightfm/recommend", tags=["Recommendations"])
+async def recommend_with_lightfm(request: UserProductRequest):
+    """
+    Get recommendation using LightFM model
+    """
+    from modelServices.lightfmModel import LightfmModel
+    lightmodel = LightfmModel()
+    try:
+        recommendation = lightmodel.recommend_with_lightfm(request.user_id, request.product_id)
+        return {"user_id": request.user_id, "product_id": request.product_id, "prediction": recommendation}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-print("تجميع المستخدمين في مجموعات")
 
-# استخراج النتائج
-print("عدد المستخدمين في كل مجموعة (مدمجة):")
-for cluster_id, users in clusters["features_clusters"].items():
-    print(f"المجموعة {cluster_id}: {len(users)} مستخدم")
+@app.post("/deeplearning/recommend", tags=["Recommendations"])
+async def recommend_with_deeplearning(request: DeepLearningRequest):
+    """
+    Get recommendation using Deep Learning model
+    """
+    from modelServices.deepLearnModel import DeepLearnModel
+    deeplearn = DeepLearnModel()
+    try:
+        input_data = request.dict()
+        prediction = deeplearn.predict_rating(input_data)
+        return {"prediction": prediction, "input_data": input_data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-print("=== تجميع الصفات ===")
-print(clusters['features_clusters'].head(10))
+ 
+@app.post("/image/recommend", tags=["Recommendations"], response_model=List[RecommendationResponse])
+async def recommend_by_image(request: ImageRequest):
+    """
+    Get recommendations based on product image similarity
+    """
+    from imageRecommender.imageRecommender import ImageRecommendationService
+    try:
+        recommendations = []
+        service = ImageRecommendationService()
+        image_recommendations = service.get_recommendations(request.image_name, request.top_n)
+        for pro in image_recommendations:
+            recommendations.append({
+                'product_id': pro['product_id'],
+            })
+        return recommendations
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-print("\n=== تجميع التفاعلات ===")
-print(clusters['interactions_clusters'].head(10))
+@app.post("/content-based/simple", tags=["Recommendations"])
+async def content_based_recommendation(request: ContentBasedRequest):
+    """
+    Get content-based recommendations based on column and value
+    """
+    from functions.recommendingFuctions import content_based_simple
+    try:
+        recommendation = []
+        recommendation_based = content_based_simple(
+            request.column_name,
+            request.value,
+            products_df,
+            request.features if request.features else ['category', 'brand']
+        )
+        recommendation_titles = recommendation_based.tolist()
+        for recom in recommendation_titles:
+            recommendation.append({
+                request.column_name: recom
+            })
+        return recommendation
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-print("\n=== التجميع المدمج ===")
-print(clusters['combined_clusters'].head(10))
+@app.get("/most-popular/{top_n}", tags=["Recommendations"], response_model=List[RecommendationResponse])
+async def most_popular(top_n: int = 10):
+    """
+    Get most popular products based on user ratings
+    """
+    from functions.recommendingFuctions import mostPopular
+    try:
+        most = []
+        popular_products = mostPopular(reviews_df, top_n)
+        product_ids_list =popular_products['product_id'].tolist()
+        for pro_id in product_ids_list:
+            most.append({
+                'product_id': pro_id,
+            })
+        return most
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-######################################################################################
+@app.post("/feature-based/knn", tags=["Recommendations"], response_model=List[RecommendationResponse])
+async def feature_based_knn_recommendation(column_name: str, value: str, entity_type: str = "product"):
+    """
+    Get recommendations based on features using KNN
+    """
+    from functions.recommendingFuctions import get_recomend_with_features_knn
+    try:
+        if entity_type == "product":
+            df = metadata['products']
+            pro_num = pd.DataFrame(metadata['features']['product_numerical'])
+            pro_cat = pd.DataFrame(metadata['features']['product_categorical'])
+        else:  # user
+            df = metadata['users']
+            pro_num = pd.DataFrame(metadata['features']['user_numerical'])
+            pro_cat = pd.DataFrame(metadata['features']['user_categorical'])
+        recommendation = []
+        features = pd.concat([pro_num, pro_cat], axis=1)
+        recommendations_knn = get_recomend_with_features_knn(df, features, column_name, value)
+        for p in recommendations_knn:
+            recommendation.append({
+                'product_id': p.iat[0]
+            })
+        return recommendation
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-## نظام التفسير
-## نظام يولد تفسير لغوي للتوصيات التي تم اختيارها 
-from explainer.explainer import RecommendationExplainer
+@app.post("/content-based/cosine", tags=["Recommendations"], response_model=List[RecommendationResponse])
+async def content_based_cosine_recommendation(column_name: str, value: str):
+    """
+    Get content-based recommendations using cosine similarity
+    """
+    from functions.recommendingFuctions import get_recomend_with_cosine
+    try:
+        df = metadata['products']
+        pro_num = pd.DataFrame(metadata['features']['product_numerical'])
+        pro_cat = pd.DataFrame(metadata['features']['product_categorical'])
+        features = pd.concat([pro_num, pro_cat], axis=1)
+        recommendations_cosine = get_recomend_with_cosine(df, features, column_name, value)
+        recommendations = []
+        recommendations_cosine_id = recommendations_cosine['product_id'].tolist()
+        for pro_id in recommendations_cosine_id:
+            recommendations.append({
+                'product_id': pro_id
+            })
+        return recommendations
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-# تحضير البيانات
-user_data = {
-    'preferences' : 'books'
-}
-
-product_data = {
-    'title': 'ktabia',
-    'category': 'books' ,
-    'brand': 'dar alnasher'
-}
-explainer = RecommendationExplainer()
-explanation = explainer.generate_explanation(
-                user_data=user_data,
-                product_data=product_data,
-                recommendation_score=3
+@app.post("/text-based/recommend", tags=["Recommendations"],  response_model=List[RecommendationResponse])
+async def text_based_recommendation(request: TextBasedRequest):
+    """
+    Get recommendations based on text description or review
+    """
+    from functions.recommendingFuctions import get_recomend_with_describition
+    try:
+        if request.df == "reviews_df":
+            recommendations_desc = get_recomend_with_describition(
+                reviews_df, request.column_name, request.text, request.column_name
             )
+        recommendations_list = recommendations_desc.tolist() 
+        recommendations =[]   
+        for pro_id in recommendations_list:
+            recommendations.append({
+                'product_id': pro_id 
+            })
+        
+        return recommendations
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-print("توليد تفسير لغوي لتوصية معينة")
-print(explanation)
-print("################################################")
+@app.post("/cluster-data", tags=["Recommendations"])
+async def cluster_data_endpoint(request: ClusterRequest):
+    """
+    Cluster data based on numerical features
+    """
+    from functions.recommendingFuctions import cluster_data
+    try:
+        if request.df == 'users':
+            clustered_data = cluster_data(
+                users_df,
+                features=request.features,
+                n_clusters=request.n_clusters,
+                auto_optimize_k=request.auto_optimize_k,
+                max_k=request.max_k
+            )
+             # Convert to JSON serializable format
+            result = clustered_data[['user_id'] + request.features + ['cluster']].to_dict(orient='records')
+        elif request.df == 'products':
+            clustered_data = cluster_data(
+                products_df,
+                features=request.features,
+                n_clusters=request.n_clusters,
+                auto_optimize_k=request.auto_optimize_k,
+                max_k=request.max_k
+            )
+             # Convert to JSON serializable format
+            result = clustered_data[['priduct_id'] + request.features + ['cluster']].to_dict(orient='records')
+        else: 
+            raise HTTPException(status_code=404, detail="Only users and products can clustered")
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-#####################################################################################
+@app.post("/description-based/recommend", tags=["Recommendations"], response_model=List[RecommendationResponse])
+async def description_based_recommendation(request: TextBasedRequest):
+    """
+    Get recommendations based on user description and optional category
+    """
+    from functions.recommendingFuctions import recommend_products_by_description
+    try:
+        recommendations_desc = recommend_products_by_description(
+            reviews_df,
+            user_description=request.text,
+            description_column=request.column_name,
+            top_n=request.top_n
+        )
+        recommendation= []
+        re_pro = recommendations_desc['product_id'].tolist()
+        for pro_id in re_pro:
+            recommendation.append({
+                'product_id': pro_id
+            })
+        return recommendation
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/user-interests/{user_id}", tags=["User Analysis"])
+async def get_user_interests(user_id: int):
+    """
+    Extract user interests from their data
+    """
+    from functions.recommendingFuctions import extract_user_interests
+    try:
+        users_with_interests = extract_user_interests(users_df, reviews_df, interactions_df, products_df)
+        user_data = users_with_interests[users_with_interests['user_id'] == user_id].to_dict(orient='records')
+        
+        if not user_data:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        return user_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/similar-users_features/{user_id}", tags=["User Analysis"])
+async def get_similar_users(user_id: int, n_recommendations: int = 5):
+    """
+    Find users with similar interests to the target user
+    """
+    from functions.recommendingFuctions import get_similar_user_from_userfeatures
+    try:
+        
+        similar_users = get_similar_user_from_userfeatures(user_id=user_id)
+        return similar_users
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/similar-users/{user_id}", tags=["User Analysis"])
+async def get_similar_users(user_id: int, n_recommendations: int = 5):
+    """
+    Find users with similar interests to the target user
+    """
+    from functions.recommendingFuctions import extract_user_interests, find_similar_users
+    try:
+        users_with_interests = extract_user_interests(users_df, reviews_df, interactions_df, products_df)
+        similar_users = find_similar_users(
+            target_user_id=user_id,
+            users_with_interests_df=users_with_interests,
+            reviews_df=reviews_df,
+            interactions_df=interactions_df,
+            n_recommendations=n_recommendations
+        )
+        similar_users_dict = similar_users.to_dict(orient='records')
+        return similar_users_dict
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/user-high-rated/{user_id}", tags=["User Analysis"])
+async def get_user_high_rated_products(user_id: int, min_rating: int = 3):
+    """
+    Get products rated highly by a user
+    """
+    from functions.recommendingFuctions import get_high_rated_products
+    try:
+        high_rated = get_high_rated_products(reviews_df, user_id, min_rating)
+        return {
+            "user_id": user_id,
+            "min_rating": min_rating,
+            "high_rated_products": high_rated
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/user-interacted-products/{user_id}", tags=["User Analysis"])
+async def get_user_interacted_products_endpoint(user_id: int):
+    """
+    Get products a user has interacted with
+    """
+    from functions.recommendingFuctions import get_user_interacted_products
+    try:
+        interacted_products = get_user_interacted_products(interactions_df, user_id)
+        return {
+            "user_id": user_id,
+            "interacted_products": interacted_products
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/user-preferred-products/{user_id}", tags=["User Analysis"])
+async def get_user_preferred_products(user_id: int):
+    """
+    Get products a user has interacted with or rated highly
+    """
+    from functions.recommendingFuctions import get_user_prefered_product
+    try:
+        preferred_products = get_user_prefered_product(reviews_df, interactions_df, user_id)
+        return {
+            "user_id": user_id,
+            "preferred_products": preferred_products
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/user-interactions-details/{user_id}", tags=["User Analysis"])
+async def get_user_interactions_details_endpoint(user_id: int):
+    """
+    Get all interaction details for a user
+    """
+    from functions.recommendingFuctions import get_user_interactions_details
+    try:
+        interactions = get_user_interactions_details(interactions_df, user_id)
+        return {
+            "user_id": user_id,
+            "interactions": interactions.to_dict(orient='records')
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/user-interactions-count/{user_id}", tags=["User Analysis"])
+async def get_user_interactions_count_endpoint(user_id: int):
+    """
+    Get interaction counts per product for a user
+    """
+    from functions.recommendingFuctions import get_user_interactions_count
+    try:
+        interaction_counts = get_user_interactions_count(interactions_df, user_id)
+        return {
+            "user_id": user_id,
+            "interaction_counts": interaction_counts
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/user-interactions-by-type/{user_id}", tags=["User Analysis"])
+async def get_user_interactions_by_type_endpoint(user_id: int, interaction_type: str):
+    """
+    Get user interactions filtered by type
+    """
+    from functions.recommendingFuctions import get_user_interactions_by_type
+    try:
+        interactions = get_user_interactions_by_type(interactions_df, user_id, interaction_type)
+        return {
+            "user_id": user_id,
+            "interaction_type": interaction_type,
+            "interactions": interactions
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/similar-users-products/{user_id}", tags=["Recommendations"])
+async def get_similar_users_products(user_id: int):
+    """
+    Get products preferred by users with similar interests
+    """
+    from functions.recommendingFuctions import get_user_similar_prefered_products
+    try:
+        products = get_user_similar_prefered_products(
+            user_id, users_df, products_df, interactions_df, reviews_df
+        )
+        return {
+            "user_id": user_id,
+            "products_from_similar_users": products
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/product-based-recommendations", tags=["Recommendations"])
+async def get_product_based_recommendations(product_ids: List[int]):
+    """
+    Get recommendations based on specific products
+    """
+    from functions.recommendingFuctions import get_products_from_product
+    try:
+        recommendations = get_products_from_product(product_ids)
+        return {
+            "product_ids": product_ids,
+            "recommendations": recommendations
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/user-suggestions/{user_id}", tags=["Recommendations"])
+async def get_user_suggestions(user_id: int):
+    """
+    Get comprehensive suggestions for a user
+    """
+    from functions.recommendingFuctions import suggest_for_user
+    try:
+        suggestions = suggest_for_user(user_id)
+        return {
+            "user_id": user_id,
+            "suggestions": suggestions
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/deep-user-suggestions/{user_id}", tags=["Recommendations"])
+async def get_deep_user_suggestions(user_id: int):
+    """
+    Get deep analysis suggestions for a user with predicted ratings
+    """
+    from functions.recommendingFuctions import deep_suggest_for_user
+    try:
+        suggestions = deep_suggest_for_user(user_id)
+        return {
+            "user_id": user_id,
+            "suggestions": suggestions
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/generate-explanation", tags=["Explanation"])
+async def generate_explanation(request: ExplanationRequest):
+    """
+    Generate natural language explanation for a recommendation
+    """
+    from explainer.explainer import RecommendationExplainer
+    try:
+        explainer = RecommendationExplainer()
+        explanation = explainer.generate_explanation(
+            user_data=request.user_data,
+            product_data=request.product_data,
+            recommendation_score=request.recommendation_score
+        )
+        
+        return {
+            "explanation": explanation,
+            "user_data": request.user_data,
+            "product_data": request.product_data,
+            "score": request.recommendation_score
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# نقطة النهاية للصحة
+@app.get("/health", tags=["System"])
+async def health_check():
+    """
+    Health check endpoint
+    """
+    return {"status": "healthy", "version": "1.0.0"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
